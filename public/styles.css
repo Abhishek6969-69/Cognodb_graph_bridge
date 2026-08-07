@@ -124,6 +124,40 @@ h3 {
   border-radius: 8px;
 }
 
+.mode-note {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid #cfd9df;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: #f7faf9;
+}
+
+.mode-note strong {
+  font-size: 0.82rem;
+}
+
+.mode-note span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.mode-note.live {
+  border-color: rgba(39, 116, 95, 0.35);
+  background: #eef7f3;
+}
+
+.mode-note.demo {
+  border-color: rgba(185, 131, 22, 0.35);
+  background: #fff8e8;
+}
+
+.mode-note.offline {
+  border-color: rgba(178, 74, 99, 0.35);
+  background: #fff0f3;
+}
+
 .field-group {
   display: grid;
   gap: 0.65rem;
@@ -158,6 +192,23 @@ select {
   max-height: 23rem;
   overflow: auto;
   padding-right: 0.2rem;
+}
+
+.empty-copy {
+  margin: 0;
+  border: 1px dashed #bfccd4;
+  border-radius: 8px;
+  padding: 0.8rem;
+  color: var(--muted);
+  background: #fbfcfc;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+select:disabled,
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .skill-toggle {
@@ -242,7 +293,7 @@ select {
 
 .graph-panel {
   position: relative;
-  min-height: 30rem;
+  min-height: 36rem;
   overflow: hidden;
   border-radius: 8px;
 }
@@ -253,6 +304,14 @@ select {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1rem 0;
+}
+
+.panel-subtitle {
+  max-width: 42rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.4;
 }
 
 .legend {
@@ -309,24 +368,42 @@ select {
 #graph {
   display: block;
   width: 100%;
-  height: 27rem;
+  height: 31.5rem;
 }
 
 .edge {
-  stroke: #aebbc5;
-  stroke-width: 1.5;
+  fill: none;
+  stroke: #b8c5ce;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  opacity: 0.68;
 }
 
-.edge-label {
-  fill: #66727d;
-  font-size: 10px;
-  font-weight: 700;
+.edge-requires {
+  stroke: #8fa5b5;
+  stroke-width: 1.8;
+}
+
+.edge-teaches,
+.edge-built-with,
+.edge-has-skill {
+  stroke-dasharray: 4 5;
 }
 
 .node-label {
   fill: #26323c;
-  font-size: 12px;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-linejoin: round;
+  stroke-width: 4px;
+  font-size: 13px;
   font-weight: 800;
+}
+
+.node {
+  stroke: white;
+  stroke-width: 3;
+  filter: drop-shadow(0 3px 4px rgba(20, 31, 40, 0.22));
 }
 
 .empty-state {

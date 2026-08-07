@@ -16,6 +16,8 @@ const roleById = new Map(roles.map((role) => [role.id, role]));
 const courseById = new Map(courses.map((course) => [course.id, course]));
 const projectById = new Map(projects.map((project) => [project.id, project]));
 
+// Mock database for local dev without Neo4j
+// TODO: eventually remove this or move to a test directory
 export function createDemoRepository() {
   return {
     mode: "demo",

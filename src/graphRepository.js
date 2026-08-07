@@ -5,6 +5,8 @@ function recordList(records, key) {
   return records.map((record) => record.get(key));
 }
 
+// Helper to convert Neo4j's weird custom Integer objects to native JS numbers.
+// Otherwise the frontend gets confused by the resulting JSON.
 function asNative(value) {
   if (neo4j.isInt(value)) return value.toNumber();
   if (Array.isArray(value)) return value.map(asNative);
@@ -36,9 +38,11 @@ export function createGraphRepository({ uri, user, password }) {
     },
     async health() {
       try {
+        // console.log("Checking Neo4j connection...");
         const records = await read(driver, "RETURN 'ok' AS status");
         return { ok: records[0]?.get("status") === "ok", mode: "cognodb" };
       } catch (error) {
+        // FIXME: sometimes this throws a weird auth error on first boot
         return { ok: false, mode: "cognodb", message: error.message };
       }
     },
@@ -101,6 +105,8 @@ export function createGraphRepository({ uri, user, password }) {
       const missingSkills = requiredSkills.filter((skill) => !current.has(skill.id));
 
       const [courseRecords, mentorRecords, projectRecords] = await Promise.all([
+        // Find courses that teach any of the skills the user is missing
+        // Note: we order by covers DESC to surface the most relevant courses first
         read(
           driver,
           `
@@ -114,6 +120,7 @@ export function createGraphRepository({ uri, user, password }) {
           `,
           { currentSkillIds, targetRoleId }
         ),
+        // Find mentors who have at least 2 skills the user needs to learn
         read(
           driver,
           `

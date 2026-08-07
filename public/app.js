@@ -7,6 +7,7 @@ const state = {
 
 const elements = {
   status: document.querySelector("#status"),
+  modeNote: document.querySelector("#modeNote"),
   targetRole: document.querySelector("#targetRole"),
   skillList: document.querySelector("#skillList"),
   runSearch: document.querySelector("#runSearch"),
@@ -25,6 +26,7 @@ const elements = {
 };
 
 async function api(path) {
+  // TODO: handle network timeouts and retries
   const response = await fetch(path);
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -34,6 +36,7 @@ async function api(path) {
 }
 
 function showToast(message) {
+  // elements.toast.innerText = `Error: ${message}`;
   elements.toast.textContent = message;
   elements.toast.hidden = false;
   window.clearTimeout(showToast.timer);
@@ -49,9 +52,31 @@ function setStatus(status) {
       ? "Demo graph"
       : "CognoDB connected"
     : "Graph offline";
+
+  elements.modeNote.className = `mode-note ${status.ok ? (status.mode === "demo" ? "demo" : "live") : "offline"}`;
+  elements.modeNote.querySelector("span").textContent = status.ok
+    ? status.mode === "demo"
+      ? "Using built-in sample data. Add CognoDB credentials and restart without USE_DEMO_DATA=true for live database mode."
+      : "Using your CognoDB instance through the Neo4j Bolt driver."
+    : "Could not reach the graph database. Check your .env credentials and instance status.";
 }
 
 function renderReference() {
+  if (state.roles.length === 0 || state.skills.length === 0) {
+    elements.targetRole.innerHTML = '<option value="">No roles found</option>';
+    elements.targetRole.disabled = true;
+    elements.skillList.innerHTML = '<p class="empty-copy">CognoDB is connected, but this database has no seed data yet.</p>';
+    elements.runSearch.disabled = true;
+    elements.graphEmpty.textContent = "Database is empty. Run npm run seed, restart the app, then refresh this page.";
+    listOrEmpty(elements.missingSkills, [], () => "", "Run npm run seed to load roles and skills.");
+    listOrEmpty(elements.courses, [], () => "", "Courses appear here after seeding.");
+    listOrEmpty(elements.mentors, [], () => "", "Mentor matches appear here after seeding.");
+    listOrEmpty(elements.projects, [], () => "", "Project paths appear here after seeding.");
+    return;
+  }
+
+  elements.targetRole.disabled = false;
+  elements.runSearch.disabled = false;
   elements.targetRole.innerHTML = state.roles
     .map((role) => `<option value="${role.id}">${role.title}</option>`)
     .join("");
@@ -124,18 +149,29 @@ function renderRecommendations(data) {
   );
 }
 
+// Magic numbers for SVG positioning, don't touch unless you want to break the layout
 function nodePosition(node, index, count) {
   const lanes = {
-    Role: { x: 110, y: 215 },
-    Skill: { x: 360, y: 215 },
-    Course: { x: 650, y: 92 },
-    Person: { x: 660, y: 220 },
-    Project: { x: 650, y: 345 }
+    Role: { x: 100, y: 260, spacing: 70 },
+    Skill: { x: 390, y: 260, spacing: 74 },
+    Course: { x: 820, y: 100, spacing: 70 },
+    Person: { x: 820, y: 265, spacing: 70 },
+    Project: { x: 820, y: 420, spacing: 70 }
   };
   const sameTypeCount = count[node.type] || 1;
-  const offset = (index[node.type] - (sameTypeCount - 1) / 2) * 56;
-  const base = lanes[node.type] || { x: 450, y: 215 };
-  return { x: base.x, y: Math.max(44, Math.min(390, base.y + offset)) };
+  const base = lanes[node.type] || { x: 560, y: 260, spacing: 70 };
+  const offset = (index[node.type] - (sameTypeCount - 1) / 2) * base.spacing;
+  return { x: base.x, y: Math.max(50, Math.min(470, base.y + offset)) };
+}
+
+function labelPosition(node, position) {
+  if (node.type === "Role") return { x: position.x + 30, y: position.y + 5, anchor: "start" };
+  if (node.type === "Skill") return { x: position.x + 30, y: position.y + 5, anchor: "start" };
+  return { x: position.x + 30, y: position.y + 5, anchor: "start" };
+}
+
+function truncateLabel(label, maxLength = 30) {
+  return label.length > maxLength ? `${label.slice(0, maxLength - 3)}...` : label;
 }
 
 function renderGraph(graph) {
@@ -160,38 +196,31 @@ function renderGraph(graph) {
     const source = positions.get(link.source);
     const target = positions.get(link.target);
     if (!source || !target) return;
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("class", "edge");
-    line.setAttribute("x1", source.x);
-    line.setAttribute("y1", source.y);
-    line.setAttribute("x2", target.x);
-    line.setAttribute("y2", target.y);
-    fragment.append(line);
-
-    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("class", "edge-label");
-    label.setAttribute("x", (source.x + target.x) / 2);
-    label.setAttribute("y", (source.y + target.y) / 2 - 7);
-    label.setAttribute("text-anchor", "middle");
-    label.textContent = link.label;
-    fragment.append(label);
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const bend = Math.max(80, Math.abs(target.x - source.x) * 0.45);
+    path.setAttribute("class", `edge edge-${link.label.toLowerCase().replace("_", "-")}`);
+    path.setAttribute("d", `M ${source.x + 16} ${source.y} C ${source.x + bend} ${source.y}, ${target.x - bend} ${target.y}, ${target.x - 16} ${target.y}`);
+    fragment.append(path);
   });
 
   graph.nodes.forEach((node) => {
     const position = positions.get(node.id);
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    group.setAttribute("class", "node-group");
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("class", `node ${node.type}`);
     circle.setAttribute("cx", position.x);
     circle.setAttribute("cy", position.y);
-    circle.setAttribute("r", node.type === "Role" ? 18 : 13);
+    circle.setAttribute("r", node.type === "Role" ? 19 : 14);
     group.append(circle);
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    const label = labelPosition(node, position);
     text.setAttribute("class", "node-label");
-    text.setAttribute("x", position.x + 22);
-    text.setAttribute("y", position.y + 4);
-    text.textContent = node.label.length > 28 ? `${node.label.slice(0, 25)}...` : node.label;
+    text.setAttribute("x", label.x);
+    text.setAttribute("y", label.y);
+    text.setAttribute("text-anchor", label.anchor);
+    text.textContent = truncateLabel(node.label, node.type === "Skill" ? 24 : 32);
     group.append(text);
     fragment.append(group);
   });
@@ -250,6 +279,7 @@ elements.clearSkills.addEventListener("click", () => {
 elements.runSearch.addEventListener("click", runSearch);
 
 async function boot() {
+  console.log('App booting...');
   try {
     const [health, reference] = await Promise.all([api("/api/health"), api("/api/reference")]);
     setStatus(health);

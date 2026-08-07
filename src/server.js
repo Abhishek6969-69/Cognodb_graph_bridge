@@ -20,61 +20,68 @@ function parseSkills(value) {
     .filter(Boolean);
 }
 
-app.get("/api/health", async (_request, response, next) => {
+// Simple health check for the DB
+app.get("/api/health", async (req, res, next) => {
   try {
-    response.json(await repository.health());
+    res.json(await repository.health());
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/api/reference", async (_request, response, next) => {
+// Fetches all available roles and skills for the dropdowns
+app.get("/api/reference", async (req, res, next) => {
   try {
-    response.json(await repository.getReferenceData());
+    res.json(await repository.getReferenceData());
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/api/role-map", async (_request, response, next) => {
+app.get("/api/role-map", async (req, res, next) => {
   try {
-    response.json({ roles: await repository.getRoleMap() });
+    // console.log("Fetching role map...");
+    res.json({ roles: await repository.getRoleMap() });
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/api/recommendations", async (request, response, next) => {
+// Main logic: calculates missing skills and finds bridge paths (courses/mentors)
+app.get("/api/recommendations", async (req, res, next) => {
   try {
-    const targetRoleId = request.query.targetRoleId;
+    const targetRoleId = req.query.targetRoleId;
     if (!targetRoleId) {
-      response.status(400).json({ error: "targetRoleId is required" });
+      res.status(400).json({ error: "targetRoleId is required" });
       return;
     }
 
-    response.json(
+    res.json(
       await repository.getRecommendations({
         targetRoleId,
-        currentSkillIds: parseSkills(request.query.currentSkills)
+        currentSkillIds: parseSkills(req.query.currentSkills)
       })
     );
   } catch (error) {
+    // TODO: better error logging here
     next(error);
   }
 });
 
-app.get("/api/graph", async (request, response, next) => {
+// Returns the D3/SVG compatible graph nodes and links
+app.get("/api/graph", async (req, res, next) => {
   try {
-    const targetRoleId = request.query.targetRoleId;
+    const targetRoleId = req.query.targetRoleId;
     if (!targetRoleId) {
-      response.status(400).json({ error: "targetRoleId is required" });
+      // FIXME: standardize error responses across API
+      res.status(400).json({ error: "targetRoleId is required" });
       return;
     }
 
-    response.json(
+    res.json(
       await repository.getGraph({
         targetRoleId,
-        currentSkillIds: parseSkills(request.query.currentSkills)
+        currentSkillIds: parseSkills(req.query.currentSkills)
       })
     );
   } catch (error) {
@@ -82,9 +89,10 @@ app.get("/api/graph", async (request, response, next) => {
   }
 });
 
-app.use((error, _request, response, _next) => {
+// Global error handler
+app.use((error, req, res, next) => {
   if (error instanceof DatabaseUnavailableError) {
-    response.status(error.status).json({
+    res.status(error.status).json({
       error: "Database unreachable",
       message: "Check COGNODB_URI, COGNODB_USER, and COGNODB_PASSWORD, then verify the CognoDB instance is running."
     });
@@ -92,7 +100,7 @@ app.use((error, _request, response, _next) => {
   }
 
   console.error(error);
-  response.status(500).json({ error: "Unexpected server error" });
+  res.status(500).json({ error: "Unexpected server error" });
 });
 
 const server = app.listen(config.port, config.host, () => {
