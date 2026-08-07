@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillBridge Graph</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CognoDB career graph</p>
+        <h1>SkillBridge Graph</h1>
+      </div>
+      <div class="status" id="status">
+        <span class="status-dot"></span>
+        <span>Checking graph</span>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="control-panel" aria-label="Search controls">
+        <div class="field-group">
+          <label for="targetRole">Target role</label>
+          <select id="targetRole"></select>
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label>Current skills</label>
+            <button class="ghost-button" id="clearSkills" type="button">Clear</button>
+          </div>
+          <div class="skill-list" id="skillList"></div>
+        </div>
+
+        <button class="primary-button" id="runSearch" type="button">Find bridge paths</button>
+      </section>
+
+      <section class="workspace" aria-live="polite">
+        <div class="summary-strip" id="summaryStrip">
+          <div>
+            <span class="metric" id="knownCount">0</span>
+            <span class="metric-label">known</span>
+          </div>
+          <div>
+            <span class="metric" id="missingCount">0</span>
+            <span class="metric-label">to learn</span>
+          </div>
+          <div>
+            <span class="metric" id="pathCount">0</span>
+            <span class="metric-label">bridge paths</span>
+          </div>
+        </div>
+
+        <div class="graph-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Relationship map</p>
+              <h2 id="graphTitle">Role to readiness graph</h2>
+            </div>
+            <div class="legend">
+              <span><i class="role"></i>Role</span>
+              <span><i class="skill"></i>Skill</span>
+              <span><i class="course"></i>Course</span>
+              <span><i class="person"></i>Person</span>
+              <span><i class="project"></i>Project</span>
+            </div>
+          </div>
+          <svg id="graph" viewBox="0 0 900 430" role="img" aria-label="Career graph visualization"></svg>
+          <div class="empty-state" id="graphEmpty">Choose a role and skills to draw the graph.</div>
+        </div>
+
+        <div class="result-grid">
+          <article class="result-card">
+            <h3>Missing skills</h3>
+            <div id="missingSkills" class="pill-stack"></div>
+          </article>
+          <article class="result-card">
+            <h3>Recommended courses</h3>
+            <div id="courses" class="list-stack"></div>
+          </article>
+          <article class="result-card">
+            <h3>Mentor candidates</h3>
+            <div id="mentors" class="list-stack"></div>
+          </article>
+          <article class="result-card">
+            <h3>Portfolio projects</h3>
+            <div id="projects" class="list-stack"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" hidden></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
